@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveillance Dashboard</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #5e42a6, #b74db5);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            background: rgba(25, 0, 51, 0.9);
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .video-section, .detected-section {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .video-section {
+            text-align: center;
+            border-right: 2px solid #7d5ba6;
+        }
+
+        .video-feed {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 3px solid #c17bdb;
+        }
+
+        .detected-section {
+            overflow-y: auto;
+            background: rgba(94, 42, 166, 0.85);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 22px;
+            color: #f8e8ff;
+            text-align: center;
+        }
+
+        #search {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .person-box {
+            background: linear-gradient(135deg, #7a45bd, #b74db5);
+            border: 1px solid #3c1e70;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+        }
+
+        .person-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 2px solid #e8c3fc;
+        }
+
+        .person-info {
+            flex: 1;
+        }
+
+        button {
+            padding: 7px 12px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #d63031;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Surveillance Dashboard</h1>
+
+    <div class="container">
+        <div class="video-section">
+            <h2>Live Cameras</h2>
+            <img src="/video_feed_1" class="video-feed" alt="Camera 1">
+            <img src="/video_feed_2" class="video-feed" alt="Camera 2">
+        </div>
+
+        <div class="detected-section">
+            <h2>Detected Persons</h2>
+            <input type="text" id="search" placeholder="Search by ID or Clothing">
+            <div id="persons-list"></div>
+        </div>
+    </div>
+
+    <script>
+        function fetchDetectedPersons() {
+            fetch('/get_detected_persons')
+                .then(response => response.json())
+                .then(data => {
+                    let list = document.getElementById('persons-list');
+                    list.innerHTML = '';
+
+                    data.forEach(person => {
+                        let box = document.createElement('div');
+                        box.classList.add('person-box');
+
+                        box.innerHTML = `
+                            <img src="${person.image_path}" class="person-img" alt="Face">
+                            <div class="person-info">
+                                <p><strong>ID:</strong> ${person.id}</p>
+                                <p><strong>Name:</strong> ${person.name}</p>
+                                <p><strong>Clothing:</strong> ${person.clothing_color}</p>
+                                <p><strong>Last Seen:</strong> ${person.last_location}</p>
+                                <p><strong>Time:</strong> ${person.timestamp}</p>
+                                <button onclick="deletePerson(${person.id})">Delete</button>
+                            </div>
+                        `;
+
+                        list.appendChild(box);
+                    });
+                });
+        }
+
+        function deletePerson(id) {
+            fetch('/delete_person', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ track_id: id })
+            }).then(() => fetchDetectedPersons());
+        }
+
+        setInterval(fetchDetectedPersons, 3000);
+        fetchDetectedPersons();
+    </script>
+</body>
+</html>
